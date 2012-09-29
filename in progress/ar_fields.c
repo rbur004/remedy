@@ -1,0 +1,9 @@
+ARCreateField*  
+ARDeleteField*  
+ARDeleteMultipleFields* 
+ARGetField  
+ARGetListEntryWithFields 
+ARGetListField 
+ARGetMultipleExtFieldCandidates 
+ARGetMultipleFields 
+ARSetField*ARGetMultipleEntries

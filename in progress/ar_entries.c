@@ -1,0 +1,12 @@
+ARCreateEntry  
+ARDeleteEntry  
+ARGetEntry  
+ARGetEntryBLOB  
+ARGetEntryBlock  
+ARGetEntryStatistics  
+ARGetListEntry  
+ARGetListEntryBlocks  
+ARGetListEntryWithFields  
+ARGetMultipleEntries  
+ARMergeEntry  
+ARSetEntry

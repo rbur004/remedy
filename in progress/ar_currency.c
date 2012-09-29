@@ -1,0 +1,3 @@
+
+ARGetCurrencyRatio 
+ARGetMultipleCurrencyRatioSets

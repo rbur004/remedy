@@ -372,9 +372,88 @@ static VALUE ar_to_s(VALUE obj)
 	return s;
 }
 
-static VALUE ar_transaction(VALUE obj)
+static VALUE ar_startTransaction(VALUE obj)
 {
-	return ar_bulk_start(1, obj, transactionClass); //Need to check that this works:) i.e. that the yield gets passed back.
+	ARClass *ar;
+	ARStatusList status;
+	
+  Data_Get_Struct(obj, ARClass, ar);
+		
+	if(ARBeginBulkEntryTransaction(ar->control, ar_bulk->status)  >= AR_RETURN_ERROR)
+	{
+		VALUE status_v = ar_status_list_new(&status);
+		FreeARStatusList(&status, FALSE);
+		rb_raise(status_v, "ARBeginBulkEntryTransaction failed"); 
+	}
+
+	FreeARStatusList(&status, FALSE);
+	return obj;
+}
+
+static VALUE ar_create_bulkEntryReturnList(ARBulkEntryReturnList *bulkEntryReturnList)
+{
+	int i;
+	VALUE bulkEntryReturnList_v = rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARBulkEntryReturnList")));
+	
+	for(i = 0; i < bulkEntryReturnList->numItems; i++)
+	{
+		switch(bulkEntryReturnList->entryReturnList[i].entryCallType)
+		{
+			case AR_BULK_ENTRY_CREATE :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, rb_ary_new3(2,,  rb_const_get(rb_cObject, rb_intern("ARCreateEntryReturn"))));
+				break;
+			case AR_BULK_ENTRY_SET :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARSetEntryReturn"))));
+				break;
+			case AR_BULK_ENTRY_DELETE :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARDeleteEntryReturn"))));
+				break;
+			case AR_BULK_ENTRY_MERGE  :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARMergeEntryReturn"))));
+				break;
+			case AR_BULK_ENTRY_XMLCREATE :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARXMLCreateEntryReturn"))));
+				break;
+			case AR_BULK_ENTRY_XMLSET :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARXMLSetEntryReturn"))));
+				break;
+ 			case AR_BULK_ENTRY_XMLDELETE :
+				rb_ary_push(bulkEntryReturnList_v, rb_class_new_instance(0, 0,  rb_const_get(rb_cObject, rb_intern("ARXMLDeleteEntryReturn"))));
+				break;
+		}
+	}
+	
+	return bulkEntryReturnList_v;
+}
+
+static VALUE ar_endTransaction(VALUE obj, VALUE action)
+{
+	ARClass *ar;
+	ARStatusList status;
+	unsigned int actionType;
+	ARBulkEntryReturnList bulkEntryReturnList;
+	VALUE bulkEntryReturnList_v;
+
+  Data_Get_Struct(obj, ARClass, ar);
+
+	if(rb_intern("send") == SYM2ID(action)) //were we passed a :send or a :cancel?
+		actionType = AR_BULK_ENTRY_ACTION_SEND;
+	else
+		actionType = AR_BULK_ENTRY_ACTION_CANCEL;
+		
+  if(ar_bulk->parent_connection->connected == 0)
+		rb_raise(rb_eRuntimeError, "Not connected?");
+		
+	if (AREndBulkEntryTransaction(ar->control, actionType, &bulkEntryReturnList, &status) >= AR_RETURN_ERROR)
+	{
+		VALUE status_v = ar_status_list_new(&status);
+		FreeARStatusList(&status, FALSE);
+		rb_raise(status_v, "AREndBulkEntryTransaction failed"); 
+	}
+
+	FreeARStatusList(&status, FALSE);
+	bulkEntryReturnList_v = ar_create_bulkEntryReturnList(&bulkEntryReturnList);
+	return obj; //!!! will want to return the bulkEntryReturnList here.
 }
 
 /*Enables plug-ins, the mid tier, and other programs (such as the Email 
@@ -402,7 +481,7 @@ static VALUE ar_ARSetImpersonatedUser(VALUE obj, VALUE user)
 		
 	if(ARSetImpersonatedUser(ar->control, s, &status)  >= AR_RETURN_ERROR)
 	{
-		VALUE status_v = ar_status_list_new(ar->status);
+		VALUE status_v = ar_status_list_new(&status);
 		FreeARStatusList(&status, FALSE);
 		rb_raise(status_v, "ARSetImpersonatedUser failed"); 
 	}
@@ -570,9 +649,8 @@ void Init_Ar()
 //	Access control 
 //  access_ctl_init()
 //	Bulk entry 
-	transactionClass = Init_bulk_entry(myModule); //Create the ArTransaction class.
-  rb_define_method(myClass, "beginBulkEntryTransaction", ar_transaction , 0);
-  rb_define_alias(myClass, "transaction",  "beginBulkEntryTransaction");
+  rb_define_method(myClass, "beginBulkEntryTransaction", ar_startTransaction , 0);
+  rb_define_method(myClass, "endBulkEntryTransaction", ar_endTransaction , 1);
 //	Currency 
 //  currency_init()
 //	Data structure help functions 

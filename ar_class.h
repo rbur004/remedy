@@ -20,7 +20,6 @@ typedef struct ar_class
 int ar_type_check(VALUE obj);
 
 #include "ar_status_list.h"
-#include "ar_bulk_entry.h"
 #include "ar_valueStructClass.h"
 
 
