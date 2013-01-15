@@ -11,9 +11,9 @@ It doesn't matter about the include files.
 
 To install
 
-ruby extconf.rb
-make
-sudo make install
+	ruby extconf.rb
+	make
+	sudo make install
 
 
 To use.
