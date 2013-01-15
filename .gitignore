@@ -1,3 +1,8 @@
+.DS_Store
+doc/.DS_Store
+lib/.DS_Store
+include/.DS_Store
+in\ progress/.DS_Store
 *.o
 *.a
 lib/*.a
