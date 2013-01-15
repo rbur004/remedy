@@ -1,0 +1,5 @@
+*.o
+*.a
+lib/*.a
+lib/*.o
+lib/*.so
